@@ -1,0 +1,253 @@
+{
+  "seed": 20261001,
+  "device": "auto",
+  "output_dir": "runs",
+  "block_size": 128,
+  "batch_size": 16,
+  "train_steps": 10000,
+  "eval_interval": 250,
+  "eval_batches": 12,
+  "test_batches": 24,
+  "calibration_batches": 8,
+  "learning_rate": 0.0003,
+  "weight_decay": 0.1,
+  "model_specs": [
+    {
+      "name": "S01",
+      "d_model": 16,
+      "n_layer": 4,
+      "n_head": 4
+    },
+    {
+      "name": "S02",
+      "d_model": 32,
+      "n_layer": 4,
+      "n_head": 4
+    },
+    {
+      "name": "S03",
+      "d_model": 64,
+      "n_layer": 4,
+      "n_head": 4
+    },
+    {
+      "name": "S04",
+      "d_model": 96,
+      "n_layer": 4,
+      "n_head": 4
+    },
+    {
+      "name": "S05",
+      "d_model": 128,
+      "n_layer": 4,
+      "n_head": 4
+    },
+    {
+      "name": "S06",
+      "d_model": 192,
+      "n_layer": 4,
+      "n_head": 4
+    },
+    {
+      "name": "S07",
+      "d_model": 256,
+      "n_layer": 4,
+      "n_head": 4
+    },
+    {
+      "name": "S08",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 4
+    },
+    {
+      "name": "S09",
+      "d_model": 512,
+      "n_layer": 4,
+      "n_head": 4
+    },
+    {
+      "name": "S10",
+      "d_model": 768,
+      "n_layer": 4,
+      "n_head": 4
+    }
+  ],
+  "photonic": {
+    "dac_bits": 8,
+    "adc_bits": 12,
+    "input_percentile": 99.9,
+    "laser_power_W": 0.00305,
+    "insertion_loss_db": 3.0,
+    "responsivity_A_per_W": 1.003,
+    "symbol_rate_Hz": 4000000000.0,
+    "integrator_capacitance_F": 1e-10,
+    "adc_full_scale_V": 0.335,
+    "mzm_vpi_V": 2.4,
+    "mzm_extinction_ratio_db": 20.0,
+    "mzm_bias_error_x_rad": 0.0,
+    "mzm_bias_error_w_rad": 0.0,
+    "mzm_phase_noise_std_rad": 0.001,
+    "rin_db_per_Hz": -140.0,
+    "thermal_current_noise_A_per_sqrtHz": 1e-12,
+    "temperature_K": 300.0,
+    "enable_shot_noise": true,
+    "enable_rin": true,
+    "enable_thermal_noise": true,
+    "enable_ktc": true,
+    "photonic_lm_head": true,
+    "noise_scale": 1.0
+  },
+  "sensitivity": {
+    "models": [
+      "S10"
+    ],
+    "adc_models": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07",
+      "S08",
+      "S09",
+      "S10"
+    ],
+    "dac_models": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07",
+      "S08",
+      "S09",
+      "S10"
+    ],
+    "power_models": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07",
+      "S08",
+      "S09",
+      "S10"
+    ],
+    "noise_models": [
+      "S10"
+    ],
+    "ablation_models": [
+      "S10"
+    ],
+    "adc_bits": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "dac_bits": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "adc_sweep_fixed_dac_bits": 16,
+    "adc_sweep_fixed_noise_scale": 1.0,
+    "dac_sweep_fixed_adc_bits": 16,
+    "dac_sweep_fixed_noise_scale": 1.0,
+    "power_values_W": [
+      1e-06,
+      3e-06,
+      1e-05,
+      3e-05,
+      0.0001,
+      0.0003,
+      0.001,
+      0.00305,
+      0.01,
+      0.02,
+      0.03,
+      0.05,
+      0.07,
+      0.1
+    ],
+    "power_sweep_fixed_adc_bits": 16,
+    "power_sweep_fixed_dac_bits": 16,
+    "power_sweep_fixed_noise_scale": 1.0,
+    "noise_scale": [
+      0.0,
+      0.25,
+      0.5,
+      1.0,
+      2.0,
+      4.0
+    ],
+    "noise_sweep_fixed_adc_bits": 16,
+    "noise_sweep_fixed_dac_bits": 16,
+    "noise_source_ablation": true,
+    "hardware_eval_repeats": 5,
+    "enable_nb_loss_study": true,
+    "nb_loss_models": [
+      "S01",
+      "S02",
+      "S03",
+      "S04",
+      "S05",
+      "S06",
+      "S07",
+      "S08",
+      "S09",
+      "S10"
+    ],
+    "nb_loss_reference_model": "S10",
+    "nb_loss_target_values": [
+      1.0,
+      1.5,
+      2.0,
+      2.5,
+      3.0,
+      3.5,
+      4.0,
+      5.0,
+      6.0,
+      8.0
+    ],
+    "nb_loss_repeats": 5,
+    "nb_scaling_plot_values": [
+      1.0,
+      2.0,
+      3.0,
+      4.0,
+      5.0,
+      6.0,
+      8.0
+    ]
+  }
+}

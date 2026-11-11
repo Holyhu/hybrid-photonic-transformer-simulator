@@ -1,0 +1,142 @@
+{
+  "hardware_eval_repeats": 5,
+  "ffn_ratio": [
+    {
+      "name": "FFR_0p5",
+      "d_model": 608,
+      "n_layer": 4,
+      "n_head": 8,
+      "d_ff": 304
+    },
+    {
+      "name": "FFR_1",
+      "d_model": 544,
+      "n_layer": 4,
+      "n_head": 8,
+      "d_ff": 544
+    },
+    {
+      "name": "FFR_2",
+      "d_model": 480,
+      "n_layer": 4,
+      "n_head": 8,
+      "d_ff": 960
+    },
+    {
+      "name": "FFR_4",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 6,
+      "d_ff": 1536
+    },
+    {
+      "name": "FFR_8",
+      "d_model": 288,
+      "n_layer": 4,
+      "n_head": 4,
+      "d_ff": 2304
+    },
+    {
+      "name": "FFR_16",
+      "d_model": 224,
+      "n_layer": 4,
+      "n_head": 4,
+      "d_ff": 3584
+    },
+    {
+      "name": "FFR_32",
+      "d_model": 160,
+      "n_layer": 4,
+      "n_head": 2,
+      "d_ff": 5120
+    }
+  ],
+  "aspect_ratio": [
+    {
+      "name": "AR_deep32",
+      "d_model": 136,
+      "n_layer": 32,
+      "n_head": 2,
+      "d_ff": 544
+    },
+    {
+      "name": "AR_deep16",
+      "d_model": 192,
+      "n_layer": 16,
+      "n_head": 3,
+      "d_ff": 768
+    },
+    {
+      "name": "AR_mid8",
+      "d_model": 272,
+      "n_layer": 8,
+      "n_head": 4,
+      "d_ff": 1088
+    },
+    {
+      "name": "AR_base4",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 6,
+      "d_ff": 1536
+    },
+    {
+      "name": "AR_wide2",
+      "d_model": 544,
+      "n_layer": 2,
+      "n_head": 8,
+      "d_ff": 2176
+    }
+  ],
+  "head_dimension": [
+    {
+      "name": "HD_16",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 24,
+      "d_ff": 1536
+    },
+    {
+      "name": "HD_32",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 12,
+      "d_ff": 1536
+    },
+    {
+      "name": "HD_48",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 8,
+      "d_ff": 1536
+    },
+    {
+      "name": "HD_64",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 6,
+      "d_ff": 1536
+    },
+    {
+      "name": "HD_96",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 4,
+      "d_ff": 1536
+    },
+    {
+      "name": "HD_128",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 3,
+      "d_ff": 1536
+    },
+    {
+      "name": "HD_192",
+      "d_model": 384,
+      "n_layer": 4,
+      "n_head": 2,
+      "d_ff": 1536
+    }
+  ]
+}

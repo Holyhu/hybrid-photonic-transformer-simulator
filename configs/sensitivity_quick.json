@@ -1,0 +1,8 @@
+{
+  "models": ["S05", "S07", "S10"],
+  "hardware_eval_repeats": 2,
+  "adc_bits": [4, 6, 8, 10, 12],
+  "dac_bits": [4, 6, 8, 10, 12],
+  "noise_scale": [0.0, 0.5, 1.0, 2.0],
+  "noise_source_ablation": true
+}
