@@ -217,7 +217,7 @@ To rerun sensitivity analysis on an existing training run:
 ```powershell
 python run_sensitivity.py `
   --run "runs\YOUR_RUN" `
-  --config "configs\sensitivity_final.json" `
+  --config "configs\sensitivity_paper.json" `
   --data-dir "data\wikitext103"
 ```
 
@@ -313,7 +313,7 @@ The test suite is intended for numerical sanity checks of the photonic core. Add
 ├── analysis/
 ├── configs/
 │   ├── all_in_one_paper.json
-│   ├── sensitivity_final.json
+│   ├── sensitivity_paper.json
 │   └── shape_study.json
 ├── data/
 │   └── text.py
