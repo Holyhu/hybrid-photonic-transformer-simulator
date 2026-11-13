@@ -1,151 +1,345 @@
-# Photonic Transformer Scaling + Hardware Sensitivity
+# Hybrid Photonic–Electronic Transformer Simulator
 
-This project compares the **same decoder-only Transformer** under:
+Research code for studying the **scaling characteristics of hybrid photonic–electronic decoder-only Transformer language models under hardware nonidealities**.
 
-1. **Digital computation**
-2. **Realistic hybrid photonic-electronic computation**
+The repository trains compact Transformer language models digitally and evaluates the same trained checkpoints with a hardware-aware photonic linear-computation model. The main goal is to connect model scale and architecture to photonic numerical error and task-level language-model loss.
 
-The publication experiment does **not** save an Ideal Photonic curve. Ideal mode remains only inside the unit test as a mathematical sanity check.
+## Research workflow
 
-The main research chain is:
+The central analysis follows
 
-`model size N -> d_model -> photonic dot-product length L -> photonic error / ENOB -> language-model loss`
+\[
+N
+\rightarrow d_{\mathrm{model}}
+\rightarrow L
+\rightarrow \text{photonic hardware error}
+\rightarrow N_{b,\mathrm{sys}}
+\rightarrow \mathcal{L}_{\mathrm{CE}} .
+\]
 
-Photonic layers: QKV, attention output projection, FFN1, FFN2, and optionally LM head. Softmax, QK^T, A@V, GELU, LayerNorm, residual connections, embeddings and optimizer remain electronic.
+where:
 
-For FFN expansion ratio 4:
+- \(N\): non-embedding parameter count,
+- \(d_{\mathrm{model}}\): Transformer hidden width,
+- \(L\): optical dot-product length,
+- \(N_{b,\mathrm{sys}}\): system effective precision derived from final-logit dynamic range and RMSE,
+- \(\mathcal{L}_{\mathrm{CE}}\): test cross-entropy loss.
 
-- QKV / attention output / FFN1 / LM head: `L = d_model`
-- FFN2: `L = 4*d_model`
+The study also includes a model-shape analysis of feed-forward ratio, depth/width aspect ratio, and attention-head dimension.
 
-## Recommended: one command for the whole experiment
+## Hybrid mapping
 
-The new default workflow is **one task**:
+The following linear operations can be mapped to the photonic engine during inference:
 
-`train each model once -> digital/realistic-photonic baseline -> ADC sweep -> DAC sweep -> noise sweep -> noise-source ablation`
+- QKV projection
+- attention output projection
+- FFN1
+- FFN2
+- language-model head
 
-All hardware sweeps reuse the exact same trained checkpoints. They do **not** retrain the Transformer for every ADC/DAC/noise point.
+The following operations remain electronic:
 
-### Quick end-to-end check
+- token and positional embeddings
+- LayerNorm
+- \(QK^\mathsf{T}\)
+- softmax
+- \(A V\)
+- residual additions
+- GELU
+
+Training is digital. Photonic hardware nonidealities are introduced during inference.
+
+## Dataset and tokenization
+
+The thesis experiments use **WikiText-103 raw** with its official `train`, `validation`, and `test` splits.
+
+The code uses a fixed UTF-8 byte-level tokenizer:
+
+- vocabulary size: 256
+- one byte = one token
+- reported language-model loss: **nats per byte token**
+
+The byte-level representation is intentional: it avoids tokenizer-training effects and keeps the tokenization rule fixed across all model sizes. Loss values should therefore not be directly compared with results reported using BPE or other subword tokenizers.
+
+## Installation
+
+Python 3.10+ is recommended.
 
 ```powershell
-python run_all.py --config configs/all_in_one_demo.json
+python -m pip install -r requirements.txt
 ```
 
-This uses the built-in demo corpus.
+For AMD ROCm systems, install a PyTorch build appropriate for your ROCm environment separately if required.
 
-### Fine-N quick pipeline check
+## Download WikiText-103
 
 ```powershell
-python run_all.py --config configs/all_in_one_fine_quick.json --text corpus.txt
+python download_wikitext103.py
 ```
 
-### Paper-oriented run
-
-```powershell
-python run_all.py --config configs/all_in_one_paper.json --text corpus.txt
-```
-
-Everything from one run is saved under one timestamped directory:
+This creates:
 
 ```text
-runs/
-└── 20261014_020000/
-    ├── all_in_one_config_resolved.json
-    ├── config_resolved.json
-    ├── environment.json
-    ├── S01_checkpoint.pt
-    ├── S02_checkpoint.pt
-    ├── ...
-    ├── scaling_summary.csv
-    ├── all_realistic_layer_stats.csv
-    ├── loss_vs_N.png
-    ├── delta_loss_vs_N.png
-    ├── enob_vs_L.png
-    ├── fit_summary.json
-    ├── run_all_complete.json
-    └── sensitivity/
-        ├── adc_vs_loss.csv
-        ├── dac_vs_loss.csv
-        ├── noise_scale_vs_loss.csv
-        ├── noise_source_ablation.csv
-        ├── sensitivity_summary.csv
-        ├── adc_bits_vs_loss.png
-        ├── adc_bits_vs_delta_loss.png
-        ├── dac_bits_vs_loss.png
-        ├── dac_bits_vs_delta_loss.png
-        ├── noise_scale_vs_loss.png
-        ├── noise_scale_vs_delta_loss.png
-        └── noise_source_ablation_vs_delta_loss.png
+data/wikitext103/
+├── train.txt
+├── validation.txt
+└── test.txt
 ```
 
-## One-file configuration
+The three files preserve the source dataset's official split boundaries.
 
-The `all_in_one_*.json` files contain both model/training parameters and the sensitivity study. The sensitivity settings are at the bottom:
-
-```json
-"sensitivity": {
-  "models": ["S03", "S05", "S07"],
-  "hardware_eval_repeats": 5,
-  "adc_bits": [4, 5, 6, 7, 8, 10, 12],
-  "dac_bits": [4, 5, 6, 7, 8, 10, 12],
-  "noise_scale": [0.0, 0.25, 0.5, 1.0, 2.0, 4.0],
-  "noise_source_ablation": true
-}
-```
-
-Edit this one JSON file when you want to change the experiment.
-
-## Realistic photonic nonidealities
-
-The simulator includes:
-
-- DAC quantization
-- finite MZM extinction ratio
-- MZM static bias error
-- MZM random phase noise
-- insertion loss
-- shot noise
-- laser RIN
-- receiver thermal-current noise
-- kTC reset noise
-- charge integration
-- ADC clipping and quantization
-
-`noise_scale` is an **abstract random-noise sensitivity multiplier**. It multiplies the random-noise **standard deviation** of MZM phase noise and the combined receiver charge noise:
-
-- `noise_scale = 0`: random noise off; DAC/ADC quantization and deterministic device nonidealities remain
-- `noise_scale = 1`: baseline hardware values
-- `noise_scale = 2`: 2x random-noise standard deviation (4x variance)
-
-Default hardware values are starting assumptions unless independently measured/cited. Do not present them as measured properties of a real chip unless you have a source.
-
-## What each sensitivity study changes
-
-- ADC sweep changes **only `adc_bits`**.
-- DAC sweep changes **only `dac_bits`**.
-- Noise-scale sweep changes **only the random-noise standard-deviation multiplier**.
-- Noise-source ablation enables `shot`, `rin`, `thermal`, `kTC`, or `MZM phase` individually, with `none` and `all` reference cases.
-
-`hardware_eval_repeats` repeats stochastic photonic inference and reports mean/std loss. For publication, use several repeats rather than one stochastic pass.
-
-## Fine N sweep
-
-`all_in_one_paper.json` uses the fine-N model family with fixed `n_layer=4`, fixed `n_head=4`, and increasing `d_model`, so model size N and photonic dot-product length L change in a controlled way.
-
-## Standalone scripts (optional)
-
-The old two-stage interface is still available for debugging or rerunning sensitivity without retraining:
+## Main paper experiment
 
 ```powershell
-python run_experiment.py --config configs/demo.json
-python run_sensitivity.py --run runs\<timestamp> --config configs\sensitivity_demo.json
+python run_all.py `
+  --config "configs\all_in_one_paper.json" `
+  --data-dir "data\wikitext103"
 ```
 
-For normal use, `run_all.py` is recommended.
+`run_all.py` performs:
 
-## Notes
+1. digital training for the S01–S10 model family,
+2. best-validation-checkpoint selection,
+3. digital and realistic-photonic baseline evaluation,
+4. hardware sensitivity analysis using the same trained checkpoints,
+5. system-effective-precision analysis.
 
-- Use the **same corpus** throughout one run. `run_all.py` handles this automatically.
-- `all_in_one_demo.json` and `all_in_one_fine_quick.json` are software checks, not paper conclusions.
-- The ByteTokenizer is intentionally simple. For a language-model scaling study closer to modern LLM practice, replace it later with a fixed BPE/SentencePiece tokenizer and a controlled public corpus.
+Hardware sweeps do **not** retrain the Transformer checkpoints.
+
+A backward-compatible one-file corpus mode is still available:
+
+```powershell
+python run_all.py `
+  --config "configs\all_in_one_paper.json" `
+  --text "corpus.txt"
+```
+
+In `--text` mode only, the legacy 90/5/5 split is applied.
+
+## Main model family
+
+| Model | `d_model` | `n_layer` | `n_head` | `d_ff` |
+|---|---:|---:|---:|---:|
+| S01 | 16 | 4 | 4 | 64 |
+| S02 | 32 | 4 | 4 | 128 |
+| S03 | 64 | 4 | 4 | 256 |
+| S04 | 96 | 4 | 4 | 384 |
+| S05 | 128 | 4 | 4 | 512 |
+| S06 | 192 | 4 | 4 | 768 |
+| S07 | 256 | 4 | 4 | 1024 |
+| S08 | 384 | 4 | 4 | 1536 |
+| S09 | 512 | 4 | 4 | 2048 |
+| S10 | 768 | 4 | 4 | 3072 |
+
+The exact non-embedding parameter count is computed from each instantiated model. The approximation
+
+\[
+N \approx 12\,n_{\mathrm{layer}}d_{\mathrm{model}}^2
+\]
+
+is used only as a scaling interpretation.
+
+## Baseline photonic configuration
+
+| Parameter | Baseline |
+|---|---:|
+| DAC resolution | 8 bit |
+| ADC resolution | 12 bit |
+| Input calibration percentile | 99.9% |
+| Laser power | 3.05 mW |
+| Insertion loss | 3 dB |
+| Photodetector responsivity | 1.003 A/W |
+| Symbol rate | 4 GHz |
+| Integration capacitance | 100 pF |
+| ADC full-scale voltage | ±0.335 V |
+| MZM half-wave voltage | 2.4 V |
+| MZM extinction ratio | 20 dB |
+| MZM bias errors | 0 rad |
+| MZM phase-noise std. | 0.001 rad |
+| RIN | -140 dB/Hz |
+| Thermal-current-noise density | \(10^{-12}\) A/\(\sqrt{\mathrm{Hz}}\) |
+| Temperature | 300 K |
+| Noise scale | 1.0 |
+| Photonic LM head | enabled |
+
+The simulator includes shot noise, RIN, thermal-current noise, and \(kTC\) noise.
+
+## System effective precision
+
+The main system-level numerical-fidelity metric is calculated from the final Transformer logits.
+
+Let \(y^{(d)}\) be the ideal digital logits and \(y^{(p)}\) the realistic photonic logits:
+
+\[
+\mathrm{RMSE}_{\mathrm{sys}}
+=
+\sqrt{
+\frac{1}{M}
+\sum_{i=1}^{M}
+\left(
+y_i^{(p)}-y_i^{(d)}
+\right)^2
+}.
+\]
+
+Then
+
+\[
+N_{b,\mathrm{sys}}
+=
+\log_2
+\left(
+\frac{
+y_{\max}^{(d)}-y_{\min}^{(d)}
+}{
+\mathrm{RMSE}_{\mathrm{sys}}
+}
+\right).
+\]
+
+This is a reference-based **system metric**. It is not identical to the nominal ADC bit depth or conventional converter ENOB.
+
+## Sensitivity experiments
+
+The paper-oriented configuration includes:
+
+- ADC resolution: 2–16 bit
+- DAC resolution: 2–16 bit
+- optical-power sweep: 1 µW to 100 mW
+- stochastic-noise scaling
+- noise-source ablation
+- repeated photonic evaluation (`hardware_eval_repeats = 5`)
+- controlled \(N_{b,\mathrm{sys}}\)-versus-loss study
+- model scaling under fixed \(N_{b,\mathrm{sys}}\)
+
+To rerun sensitivity analysis on an existing training run:
+
+```powershell
+python run_sensitivity.py `
+  --run "runs\YOUR_RUN" `
+  --config "configs\sensitivity_final.json" `
+  --data-dir "data\wikitext103"
+```
+
+Use the same dataset files that were used to train the checkpoints.
+
+## Model-shape study
+
+```powershell
+python run_shape_study.py `
+  --config "configs\all_in_one_paper.json" `
+  --shape-config "configs\shape_study.json" `
+  --data-dir "data\wikitext103"
+```
+
+The shape study evaluates:
+
+- \(d_{\mathrm{ff}}/d_{\mathrm{model}}\)
+- \(d_{\mathrm{model}}/n_{\mathrm{layer}}\)
+- \(d_{\mathrm{head}}=d_{\mathrm{model}}/n_{\mathrm{head}}\)
+
+See [`README_SHAPE_STUDY.md`](README_SHAPE_STUDY.md) for details.
+
+## Outputs
+
+A main run creates a timestamped directory under `runs/`, including the resolved configuration, dataset metadata, checkpoints, CSV summaries, and figures.
+
+Important outputs include:
+
+```text
+runs/<timestamp>/
+├── all_in_one_config_resolved.json
+├── config_resolved.json
+├── dataset_info.json
+├── scaling_summary.csv
+├── loss_vs_N.png
+├── delta_loss_vs_N.png
+├── Nb_system_vs_N.png
+└── sensitivity/
+    ├── sensitivity_summary.csv
+    ├── adc_vs_loss.csv
+    ├── dac_vs_loss.csv
+    ├── power_vs_loss.csv
+    ├── noise_scale_vs_loss.csv
+    ├── noise_source_ablation.csv
+    ├── Nb_system_vs_loss.csv
+    ├── N_vs_loss_by_Nb_system.csv
+    ├── power_vs_loss.png
+    ├── power_vs_Nb_system.png
+    ├── Nb_system_vs_loss.png
+    └── N_vs_loss_by_Nb_system.png
+```
+
+Shape-study outputs include:
+
+```text
+ffn_ratio.csv
+aspect_ratio.csv
+head_dimension.csv
+shape_study_all.csv
+ffn_ratio_vs_loss.png
+aspect_ratio_vs_loss.png
+head_dimension_vs_loss.png
+shape_study_digital_vs_photonic_3panel.png
+```
+
+## Reproducibility
+
+Each paper run should preserve:
+
+- the exact resolved JSON configuration,
+- `dataset_info.json`,
+- random seed,
+- software environment,
+- final CSV files used to generate thesis figures,
+- the Git commit hash used for the run.
+
+The repository intentionally excludes large checkpoints, generated runs, and downloaded WikiText-103 files.
+
+For a thesis freeze, copy the final configuration and figure-source CSVs into `reproduction/` and record the corresponding Git commit hash.
+
+## Tests
+
+```powershell
+python -m pytest -q
+```
+
+The test suite is intended for numerical sanity checks of the photonic core. Additional regression tests for system effective precision and dataset split handling are recommended as the project evolves.
+
+## Repository structure
+
+```text
+.
+├── analysis/
+├── configs/
+│   ├── all_in_one_paper.json
+│   ├── sensitivity_final.json
+│   └── shape_study.json
+├── data/
+│   └── text.py
+├── models/
+│   └── transformer.py
+├── photonic/
+├── tests/
+├── download_wikitext103.py
+├── run_all.py
+├── run_experiment.py
+├── run_sensitivity.py
+├── run_shape_study.py
+├── train_eval.py
+└── requirements.txt
+```
+
+## Dataset source
+
+WikiText-103 is obtained through the `Salesforce/wikitext` dataset, configuration `wikitext-103-raw-v1`. The dataset is not redistributed by this repository.
+
+## Thesis
+
+**Scaling Characteristics of Hybrid Photonic–Electronic Transformer Language Models under Hardware Nonidealities**
+
+The code is research software intended to support the numerical experiments and reproducibility of the thesis. It should not be interpreted as a circuit-level or electromagnetic simulation of a fabricated photonic system.
+
+## Citation
+
+If you use this repository, please cite the repository using `CITATION.cff`. A thesis or paper citation can be added after the final manuscript is archived.

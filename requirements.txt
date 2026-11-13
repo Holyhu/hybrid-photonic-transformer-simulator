@@ -1,3 +1,5 @@
-torch>=2.1 #PyTorch must be installed separately with an appropriate GPU backend.
+torch>=2.1
 numpy>=1.24
 matplotlib>=3.7
+datasets>=2.18
+pytest>=7.4
